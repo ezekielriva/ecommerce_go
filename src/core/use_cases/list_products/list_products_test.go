@@ -17,6 +17,11 @@ func (m *MProductRepository) List(params repositories.ListProductsParams) []enti
 	return args.Get(0).([]entities.Product)
 }
 
+func (m *MProductRepository) Get(id entities.ProductID) (*entities.Product, error) {
+	args := m.Called()
+	return args.Get(0).(*entities.Product), args.Get(1).(error)
+}
+
 func Test(t *testing.T) {
 	testCases := []struct {
 		desc   string

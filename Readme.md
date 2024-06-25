@@ -7,6 +7,7 @@ The objective of this project is to create an online marketplace specifically fo
 ## Guests
 
 1. As a Guest, I'd like to access to the list of products so I can view what's available in the marketplace.
+1. As a Guest, I'd like to see Product details so I can confirm I'm buying the right one.
 1. As a Guest, I'd like to register so I can perform products purchases.
 
 ## Customers

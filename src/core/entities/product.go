@@ -1,5 +1,8 @@
 package entities
 
+type ProductID int
+
 type Product struct {
-	name string
+	Id   ProductID
+	Name string
 }

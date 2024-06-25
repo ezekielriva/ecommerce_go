@@ -16,4 +16,5 @@ type ListProductsParams struct {
 
 type ProductRepository interface {
 	List(params ListProductsParams) []entities.Product
+	Get(id entities.ProductID) (*entities.Product, error)
 }
