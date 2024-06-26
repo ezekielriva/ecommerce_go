@@ -62,3 +62,13 @@ All use cases not defined:
     Security and Privacy:
         Implement robust security measures to protect user data.
         Ensure compliance with data protection regulations like GDPR.
+
+
+# Technical Considerations
+
+## How to generate mocks?
+
+1. Run `mockgen <Full Package Name> <Sources> >> <Sources Location Path>/mocks/mocks.go`
+
+    Example:
+    mockgen github.com/ezekielriva/ecommerce_go/src/core/repositories ProductRepository,UserRepository > src/core/repositories/mocks/mocks.go
