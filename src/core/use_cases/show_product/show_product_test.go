@@ -5,23 +5,9 @@ import (
 	"testing"
 
 	"github.com/ezekielriva/ecommerce_go/src/core/entities"
-	"github.com/ezekielriva/ecommerce_go/src/core/repositories"
-	"github.com/stretchr/testify/mock"
+	mock_repositories "github.com/ezekielriva/ecommerce_go/src/core/repositories/mocks"
+	"go.uber.org/mock/gomock"
 )
-
-type MProductRepository struct {
-	mock.Mock
-}
-
-func (m *MProductRepository) List(params repositories.ListProductsParams) []entities.Product {
-	args := m.Called()
-	return args.Get(0).([]entities.Product)
-}
-
-func (m *MProductRepository) Get(id entities.ProductID) (*entities.Product, error) {
-	args := m.Called(id)
-	return args.Get(0).(*entities.Product), args.Error(1)
-}
 
 func TestShowProductUseCase(t *testing.T) {
 	testCases := []struct {
@@ -43,10 +29,14 @@ func TestShowProductUseCase(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			var repository *MProductRepository = &MProductRepository{}
-			var useCase *ShowProductUseCase = NewShowProductUseCase(repository)
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-			repository.On("Get", tC.id).Return(tC.productUT, tC.err).Times(1)
+			repo := mock_repositories.NewMockProductRepository(ctrl)
+
+			useCase := NewShowProductUseCase(repo)
+
+			repo.EXPECT().Get(tC.id).Return(tC.productUT, tC.err).Times(1)
 
 			product, err := useCase.Execute(tC.id)
 
@@ -57,8 +47,6 @@ func TestShowProductUseCase(t *testing.T) {
 			if err != nil && errors.Is(err, tC.err) {
 				t.Errorf("Error doesnt match. Actual (%d) Expected (%d)", err, tC.err)
 			}
-
-			repository.AssertExpectations(t)
 		})
 	}
 }
