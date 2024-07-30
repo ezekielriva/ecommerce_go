@@ -1,37 +1,28 @@
 package listproducts
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/ezekielriva/ecommerce_go/src/core/entities"
 	"github.com/ezekielriva/ecommerce_go/src/core/repositories"
-	"github.com/stretchr/testify/mock"
+	mock_repositories "github.com/ezekielriva/ecommerce_go/src/core/repositories/mocks"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
-
-type MProductRepository struct {
-	mock.Mock
-}
-
-func (m *MProductRepository) List(params repositories.ListProductsParams) []entities.Product {
-	args := m.Called(params)
-	return args.Get(0).([]entities.Product)
-}
-
-func (m *MProductRepository) Get(id entities.ProductID) (*entities.Product, error) {
-	args := m.Called()
-	return args.Get(0).(*entities.Product), args.Get(1).(error)
-}
 
 func Test(t *testing.T) {
 	testCases := []struct {
-		desc   string
-		len    int
-		params repositories.ListProductsParams
+		desc     string
+		len      int
+		params   repositories.ListProductsParams
+		products []entities.Product
 	}{
 		{
-			desc:   "Returns all products",
-			len:    2,
-			params: repositories.ListProductsParams{},
+			desc:     "Returns all products",
+			len:      2,
+			params:   repositories.ListProductsParams{},
+			products: make([]entities.Product, 2),
 		},
 		{
 			desc: "Returns only products with id=1",
@@ -39,6 +30,7 @@ func Test(t *testing.T) {
 			params: repositories.ListProductsParams{Filters: []repositories.TListFilter{
 				{Field: "id", Value: "1"},
 			}},
+			products: make([]entities.Product, 1),
 		},
 		{
 			desc: "Returns only products with name=pepsi",
@@ -46,6 +38,7 @@ func Test(t *testing.T) {
 			params: repositories.ListProductsParams{Filters: []repositories.TListFilter{
 				{Field: "name", Value: "pepsi", Operation: "eq"},
 			}},
+			products: make([]entities.Product, 3),
 		},
 		{
 			desc: "Returns only products with name=pepsi and price greather than 0",
@@ -54,21 +47,25 @@ func Test(t *testing.T) {
 				{Field: "name", Value: "pepsi"},
 				{Field: "price", Value: "0", Operation: "gt"},
 			}},
+			products: make([]entities.Product, 3),
 		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			repository := &MProductRepository{}
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-			repository.On("List", tC.params).Return(make([]entities.Product, tC.len)).Times(1)
+			repo := mock_repositories.NewMockProductRepository(ctrl)
+
+			repo.EXPECT().List(tC.params).Times(1).Return(tC.products)
 
 			var useCase ListProductsUseCase = ListProductsUseCase{
-				productRepository: repository,
+				productRepository: repo,
 			}
 
-			useCase.Execute(tC.params)
+			products := useCase.Execute(tC.params)
 
-			repository.AssertExpectations(t)
+			assert.Len(t, products, tC.len, errors.New("Not enough items"))
 		})
 	}
 }
