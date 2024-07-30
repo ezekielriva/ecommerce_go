@@ -19,8 +19,8 @@ func (u *ShowProductUseCase) Execute(id entities.ProductID) (*entities.Product, 
 	product, err := u.productRepository.Get(id)
 
 	if err != nil {
-		return product, &ProductNotFoundError{id: id}
+		return nil, &ProductNotFoundError{id: id}
 	}
 
-	return product, err
+	return product, nil
 }
