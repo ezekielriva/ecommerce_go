@@ -35,26 +35,27 @@ func (useCase *CreateUserUseCase) Execute(name string, email string, username st
 
 func (useCase *CreateUserUseCase) validateUser(user *entities.User) error {
 	err := &MissingAttributesError{}
+	cred := user.Credentials
 
 	if user.Name == "" {
 		err.AppendMissingAttribute("Name")
 	}
 
-	if user.Email == "" {
+	if cred.Email == "" {
 		err.AppendMissingAttribute("Email")
 	}
 
-	if user.Username == "" {
+	if cred.Username == "" {
 		err.AppendMissingAttribute("Username")
 	}
 
-	if user.Password == "" {
+	if cred.Password == "" {
 		err.AppendMissingAttribute("Password")
 	}
 
 	if err.AnyMissingAttribute() {
 		return err
-	} else {
-		return nil
 	}
+
+	return nil
 }

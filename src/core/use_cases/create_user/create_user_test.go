@@ -29,8 +29,8 @@ func TestCreateUserUseCase(t *testing.T) {
 		)
 
 		assert.Equal(t, "Name", user.Name, "Name doesnt match")
-		assert.Equal(t, "Email", user.Email, "Email doesnt match")
-		assert.Equal(t, "Username", user.Username, "Username doesnt match")
+		assert.Equal(t, "Email", user.Credentials.Email, "Email doesnt match")
+		assert.Equal(t, "Username", user.Credentials.Username, "Username doesnt match")
 	})
 
 	t.Run("Throw an Error when User Data is incomplete", func(t *testing.T) {
