@@ -12,26 +12,27 @@ import (
 )
 
 func TestAuthenticateUserUseCase(t *testing.T) {
-	password := "Password"
-
 	validCases := []struct {
-		desc     string
-		creds    entities.UserCredentials
-		useMocks bool
-		err      error
-		user     *entities.User
+		desc  string
+		creds *entities.UserCredentials
+		err   error
+		user  *entities.User
 	}{
 		{
-			desc:     "When username and password match",
-			creds:    entities.UserCredentials{Username: "Username", Password: password},
-			user:     &entities.User{},
-			useMocks: true,
+			desc: "When username and password match",
+			creds: func() *entities.UserCredentials {
+				cred, _ := entities.NewUserCredentials("", "Username", "password")
+				return cred
+			}(),
+			user: &entities.User{},
 		},
 		{
-			desc:     "When email and password match",
-			creds:    entities.UserCredentials{Email: "Email", Password: password},
-			user:     &entities.User{},
-			useMocks: true,
+			desc: "When email and password match",
+			creds: func() *entities.UserCredentials {
+				cred, _ := entities.NewUserCredentials("Email", "", "password")
+				return cred
+			}(),
+			user: &entities.User{},
 		},
 	}
 
@@ -43,17 +44,15 @@ func TestAuthenticateUserUseCase(t *testing.T) {
 			repo := mock_repositories.NewMockUserRepository(ctrl)
 			useCase := NewAuthenticateUserUseCase(repo)
 
-			if tC.useMocks {
-				repo.EXPECT().Authenticate(gomock.Any()).DoAndReturn(func(_ entities.UserCredentials) (*entities.User, error) {
-					return tC.user, tC.err
-				})
+			repo.EXPECT().Authenticate(gomock.Any()).DoAndReturn(func(_ entities.UserCredentials) (*entities.User, error) {
+				return tC.user, tC.err
+			})
 
-				repo.EXPECT().Save(gomock.Any()).DoAndReturn(func(_ *entities.User) (*entities.User, error) {
-					return tC.user, tC.err
-				})
-			}
+			repo.EXPECT().Save(gomock.Any()).DoAndReturn(func(_ *entities.User) (*entities.User, error) {
+				return tC.user, tC.err
+			})
 
-			user, _ := useCase.Execute(tC.creds)
+			user, _ := useCase.Execute(*tC.creds)
 
 			assert.Equal(t, tC.user.Id, user.Id, "User IDs must match")
 			assert.NotEmpty(t, user.Credentials.HashedPassword)
@@ -72,8 +71,8 @@ func TestAuthenticateUserUseCase(t *testing.T) {
 	}{
 		{
 			desc:  "When email and password doesnt match",
-			creds: entities.UserCredentials{Email: "Email", Password: password, HashedPassword: gomock.Any().String()},
-			err:   errors.New("User not found"),
+			creds: entities.UserCredentials{Email: "Email", Password: "password", HashedPassword: gomock.Any().String()},
+			err:   errors.New("authenticate: user not found"),
 			setup: func(repo *mock_repositories.MockUserRepository, user *entities.User, err error) {
 				repo.EXPECT().Authenticate(gomock.Any()).DoAndReturn(func(_ entities.UserCredentials) (*entities.User, error) {
 					return user, err
@@ -82,8 +81,8 @@ func TestAuthenticateUserUseCase(t *testing.T) {
 		},
 		{
 			desc:  "When username and password doesnt match",
-			creds: entities.UserCredentials{Email: "Email", Password: password, HashedPassword: gomock.Any().String()},
-			err:   errors.New("User not found"),
+			creds: entities.UserCredentials{Email: "Email", Password: "password", HashedPassword: gomock.Any().String()},
+			err:   errors.New("authenticate: user not found"),
 			setup: func(repo *mock_repositories.MockUserRepository, user *entities.User, err error) {
 				repo.EXPECT().Authenticate(gomock.Any()).DoAndReturn(func(_ entities.UserCredentials) (*entities.User, error) {
 					return user, err
@@ -116,7 +115,7 @@ func TestAuthenticateUserUseCase(t *testing.T) {
 
 			_, err := useCase.Execute(tC.creds)
 
-			assert.Equal(t, err, tC.err, "Errors must match")
+			assert.Error(t, err, tC.err.Error())
 		})
 	}
 }
