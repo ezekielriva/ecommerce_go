@@ -11,27 +11,52 @@ import (
 )
 
 func TestCreateUserUseCase(t *testing.T) {
-	t.Run("Creates User with the provided data", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-		repo := mock_repositories.NewMockUserRepository(ctrl)
-		useCase := NewCreateUserUseCase(repo)
+	validCases := []struct {
+		desc     string
+		name     string
+		email    string
+		username string
+		password string
+	}{
+		{
+			desc:     "Valid user with email and password",
+			name:     "Name",
+			email:    "Email",
+			password: "Password",
+		},
+		{
+			desc:     "Valid user with username and password",
+			name:     "Name",
+			username: "Username",
+			password: "Password",
+		},
+	}
 
-		repo.EXPECT().Create(gomock.Any()).DoAndReturn(func(user *entities.User) (any, error) {
-			return user, nil
-		}).Times(1)
+	for _, tC := range validCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			repo := mock_repositories.NewMockUserRepository(ctrl)
+			useCase := NewCreateUserUseCase(repo)
 
-		user, _ := useCase.Execute(
-			"Name",
-			"Email",
-			"Username",
-			"Password",
-		)
+			repo.EXPECT().Create(gomock.Any()).DoAndReturn(func(user *entities.User) (any, error) {
+				user.Id = 1
+				return user, nil
+			}).Times(1)
 
-		assert.Equal(t, "Name", user.Name, "Name doesnt match")
-		assert.Equal(t, "Email", user.Credentials.Email, "Email doesnt match")
-		assert.Equal(t, "Username", user.Credentials.Username, "Username doesnt match")
-	})
+			user, err := useCase.Execute(tC.name, tC.email, tC.username, tC.password)
+
+			if err != nil {
+				t.Error(err)
+			}
+
+			assert.NotEmpty(t, user, "Missing User")
+			assert.Equal(t, tC.name, user.Name, "Name doesnt match")
+			assert.Equal(t, tC.email, user.Credentials.Email, "Email doesnt match")
+			assert.Equal(t, tC.username, user.Credentials.Username, "Username doesnt match")
+			assert.NotEmpty(t, user.Credentials.HashedPassword, "No hashed password")
+		})
+	}
 
 	t.Run("Throw an Error when User Data is incomplete", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
@@ -41,7 +66,7 @@ func TestCreateUserUseCase(t *testing.T) {
 
 		_, err := useCase.Execute("", "", "", "")
 
-		assert.EqualError(t, err, errors.New("Missing attributes: Name, Email, Username, Password").Error())
+		assert.EqualError(t, err, errors.New("Missing attributes: Name, Email or Username, Password").Error())
 	})
 
 	errorCases := []struct {

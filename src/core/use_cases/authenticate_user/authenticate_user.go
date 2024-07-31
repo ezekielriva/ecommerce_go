@@ -1,13 +1,11 @@
 package authenticateuser
 
 import (
-	"crypto/rand"
-	"encoding/base64"
 	"errors"
-	"time"
 
 	"github.com/ezekielriva/ecommerce_go/src/core/entities"
 	"github.com/ezekielriva/ecommerce_go/src/core/repositories"
+	authtokengeneration "github.com/ezekielriva/ecommerce_go/src/core/use_cases/auth_token_generation"
 	"github.com/ezekielriva/ecommerce_go/src/utils"
 )
 
@@ -48,7 +46,7 @@ func (useCase *AuthenticateUserUseCase) Execute(cred entities.UserCredentials) (
 		return nil, err
 	}
 
-	err = useCase.generateAuthToken(&cred)
+	err = authtokengeneration.GenerateAuthToken(&cred)
 
 	if err != nil {
 		return nil, err
@@ -84,20 +82,6 @@ func (useCase *AuthenticateUserUseCase) hashPassword(cred *entities.UserCredenti
 	if err != nil {
 		return errors.Join(errors.New("hash password"), err)
 	}
-
-	return nil
-}
-
-func (useCase *AuthenticateUserUseCase) generateAuthToken(cred *entities.UserCredentials) error {
-	randomToken := make([]byte, 32)
-	_, err := rand.Read(randomToken)
-
-	if err != nil {
-		return err
-	}
-
-	cred.AuthToken = base64.URLEncoding.EncodeToString(randomToken)
-	cred.AuthTokenExp = time.Now().Add(time.Minute * 60)
 
 	return nil
 }

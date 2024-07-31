@@ -3,6 +3,7 @@ package createuser
 import (
 	"github.com/ezekielriva/ecommerce_go/src/core/entities"
 	"github.com/ezekielriva/ecommerce_go/src/core/repositories"
+	authtokengeneration "github.com/ezekielriva/ecommerce_go/src/core/use_cases/auth_token_generation"
 )
 
 type CreateUserUseCase struct {
@@ -15,10 +16,27 @@ func NewCreateUserUseCase(userRepository repositories.UserRepository) *CreateUse
 	}
 }
 
+/*
+Create User Use Case:
+ 1. Validate User Data
+ 2. Build Credentials Data
+ 3. Create User
+ 4. Return User
+*/
 func (useCase *CreateUserUseCase) Execute(name string, email string, username string, password string) (*entities.User, error) {
-	var user *entities.User = entities.NewUser(name, email, username, password)
+	user, err := entities.NewUser(name, email, username, password)
 
-	err := useCase.validateUser(user)
+	if err != nil {
+		return nil, err
+	}
+
+	err = useCase.validateUser(user)
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = authtokengeneration.GenerateAuthToken(user.Credentials)
 
 	if err != nil {
 		return nil, err
@@ -34,6 +52,16 @@ func (useCase *CreateUserUseCase) Execute(name string, email string, username st
 }
 
 func (useCase *CreateUserUseCase) validateUser(user *entities.User) error {
+	err := useCase.validateUserAttributes(user)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (userCase *CreateUserUseCase) validateUserAttributes(user *entities.User) error {
 	err := &MissingAttributesError{}
 	cred := user.Credentials
 
@@ -41,12 +69,8 @@ func (useCase *CreateUserUseCase) validateUser(user *entities.User) error {
 		err.AppendMissingAttribute("Name")
 	}
 
-	if cred.Email == "" {
-		err.AppendMissingAttribute("Email")
-	}
-
-	if cred.Username == "" {
-		err.AppendMissingAttribute("Username")
+	if cred.Email == "" && cred.Username == "" {
+		err.AppendMissingAttribute("Email or Username")
 	}
 
 	if cred.Password == "" {
